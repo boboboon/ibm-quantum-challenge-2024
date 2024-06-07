@@ -2,12 +2,9 @@
 """Lab 1."""
 
 import os
-from typing import Callable, List
 
-import matplotlib.pyplot as plt
 import numpy as np
 from config import API_KEY
-from loguru import logger
 from qc_grader.challenges.iqc_2024 import (
     grade_lab1_ex1,
     grade_lab1_ex2,
@@ -19,16 +16,14 @@ from qc_grader.challenges.iqc_2024 import (
 )
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import TwoLocal
-from qiskit.primitives import PrimitiveJob, StatevectorSampler
-from qiskit.quantum_info import Operator, SparsePauliOp, Statevector
+from qiskit.primitives import StatevectorSampler
+from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from qiskit.visualization import plot_histogram
 from qiskit_aer import AerSimulator
 from qiskit_ibm_runtime import EstimatorV2 as Estimator
 from qiskit_ibm_runtime import Session
 from qiskit_ibm_runtime.fake_provider import FakeSherbrooke
 from scipy.optimize import minimize
-from scipy.optimize._optimize import OptimizeResult
 
 os.environ["QXToken"] = API_KEY  # noqa: SIM112
 # %%
@@ -55,6 +50,8 @@ qc.x(1)
 
 qc.measure_all()
 qc.draw("mpl")
+# %%
+# * Grading
 
 grade_lab1_ex1(qc)
 # %%
@@ -74,17 +71,17 @@ sampler = StatevectorSampler()
 
 pub = (qc, params)
 job_sampler = sampler.run([pub], shots=256)  # type: ignore
-
+### Don't change any code past this line ###
 result_sampler = job_sampler.result()
-counts_sampler = result_sampler[0].data.meas.get_counts()  # type: ignore
+counts_sampler = result_sampler[0].data.meas.get_counts()
 
-logger.info(counts_sampler)
 
 ### Don't change any code past this line ###
 
 result_sampler = job_sampler.result()
 counts_sampler = result_sampler[0].data.meas.get_counts()  # type: ignore
 # %%
+# * Grading
 grade_lab1_ex2(job_sampler)
 # %%
 """
@@ -112,6 +109,7 @@ qc.x(0)
 
 
 # %%
+# * Grading
 grade_lab1_ex3(qc)
 # %%
 """
@@ -148,6 +146,7 @@ ansatz = TwoLocal(
 ### Don't change any code past this line ###
 ansatz.decompose().draw("mpl")
 # %%
+# * Grading
 grade_lab1_ex4(num_qubits, rotation_blocks, entanglement_blocks, entanglement)
 
 # %%
@@ -164,3 +163,123 @@ on a specific backend.
 
 Your Task: Define the pass manager. Reference the Qiskit documentation for more info.
 """
+backend_answer = FakeSherbrooke()
+optimization_level_answer = 0
+pm = generate_preset_pass_manager(optimization_level=0, backend=backend_answer)
+isa_circuit = pm.run(ansatz)
+isa_circuit.draw(
+    "mpl",
+    idle_wires=False,
+)
+# %%
+# * Grading
+grade_lab1_ex5(isa_circuit)
+# %%
+"""
+Exercise 6: Defining the cost function
+
+Like many classical optimization problems, the solution to a VQE problem can be formulated as
+minimization of a scalar cost function. The cost function for our VQE is simple: the energy!
+
+Your Task: Define a cost function by using Qiskit Runtime Estimator to find the energy for a
+given parameterized state and our Hamiltonian.
+"""
+
+pauli_op = SparsePauliOp(["ZII", "IZI", "IIZ"])
+hamiltonian_isa = pauli_op.apply_layout(layout=isa_circuit.layout)
+
+
+def cost_func(params, ansatz, hamiltonian, estimator, callback_dict):
+    """Return estimate of energy from estimator.
+
+    Parameters:
+        params (ndarray): Array of ansatz parameters
+        ansatz (QuantumCircuit): Parameterized ansatz circuit
+        hamiltonian (SparsePauliOp): Operator representation of Hamiltonian
+        estimator (EstimatorV2): Estimator primitive instance
+
+    Returns:
+        float: Energy estimate
+    """
+    pub = (ansatz, [hamiltonian], [params])
+    result = estimator.run(pubs=[pub]).result()
+    energy = result[0].data.evs[0]
+
+    callback_dict["iters"] += 1
+    callback_dict["prev_vector"] = params
+    callback_dict["cost_history"].append(energy)
+
+    ### Don't change any code past this line ###
+    print(energy)
+    return energy, result
+
+
+# %%
+# * Grading
+grade_lab1_ex6(cost_func)
+
+# %%
+"""Exercise 7: QiskitRuntimeService V2 Primitives, local testing mode and Sessions, a first look
+
+Next, we will use the new QiskitRuntimeService V2 primitives: EstimatorV2 and SamplerV2.
+
+The new Estimator interface lets you specify a single circuit and multiple observables and parameter
+value sets for that circuit, so that sweeps over parameter value sets and observables can be
+efficiently specified. Previously, you had to specify the same circuit multiple times to match the
+size of the data to be combined. Also, while you can still use optimization_level and
+resilience_level as the simple knobs, V2 primitives give you the flexibility to turn on or
+off individual error mitigation / suppression methods to customize them for your needs.
+
+SamplerV2 is simplified to focus on its core task of sampling the quantum register from the
+execution of quantum circuits. It returns the samples, whose type is defined by the program,
+without weights. The output data is also separated by the output register names defined by the
+program. This change enables future support for circuits with classical control flow.
+
+We will also use Qiskit's 1.0 local testing mode. Local testing mode (available with
+qiskit-ibm-runtime 0.22.0 or later) can be used to help develop and test programs before fine-tuning
+them and sending them to real quantum hardware.
+
+Your Task: After using local testing mode to verify your program, all you need to do is change the
+backend name to run it on an IBM Quantum system.
+"""
+num_params = ansatz.num_parameters
+x0 = 2 * np.pi * np.random.random(num_params)  # noqa: NPY002
+callback_dict = {
+    "prev_vector": None,
+    "iters": 0,
+    "cost_history": [],
+}
+
+### Select a Backend
+## Use FakeSherbrooke to simulate with noise that matches closer to the real
+# experiment. This will run slower.
+## Use AerSimulator to simulate without noise to quickly iterate. This will run faster.
+
+backend = AerSimulator()
+
+# ### Don't change any code past this line ###
+
+
+# Here we have updated the cost function to return only the energy to be
+# compatible with recent scipy versions (>=1.10)
+def cost_func_2(*args, **kwargs):
+    energy, result = cost_func(*args, **kwargs)
+    return energy
+
+
+with Session(backend=backend) as session:
+    estimator = Estimator(session=session)
+
+    res = minimize(
+        cost_func_2,
+        x0,
+        args=(isa_circuit, hamiltonian_isa, estimator, callback_dict),
+        method="cobyla",
+        options={"maxiter": 100},
+    )
+
+# %%
+# * Grading
+grade_lab1_ex7(res)
+
+# %%

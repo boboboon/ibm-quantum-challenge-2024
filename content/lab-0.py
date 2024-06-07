@@ -6,6 +6,7 @@ from config import API_KEY
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
+#%%
 os.environ["QXToken"] = API_KEY  # noqa: SIM112
 #%%
 #? Initial Quantum Circuit
@@ -26,13 +27,13 @@ qc.cx(0, 1)
 #? Exercise 1
 
 # The ZZ applies a Z operator on qubit 0, and a Z operator on qubit 1
-ZZ = SparsePauliOp('ZZ')
+ZZ = SparsePauliOp("ZZ")
 
 # The ZI applies a Z operator on qubit 0, and an Identity operator on qubit 1
-ZI = SparsePauliOp('ZI')
+ZI = SparsePauliOp("ZI")
 
 # The IX applies an Identity operator on qubit 0, and an X operator on qubit 1
-IX = SparsePauliOp('IX')
+IX = SparsePauliOp("IX")
 
 
 
@@ -44,3 +45,4 @@ IX = SparsePauliOp('IX')
 ## Don't change any code past this line, but remember to run the cell.
 
 #observables = [IZ, IX, ZI, XI, ZZ, XX]
+# %%

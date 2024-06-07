@@ -18,7 +18,6 @@ select = [
     "ANN",  # flake8 type hinting
     "BLE",  # disable blind extensions
     "FBT",  # make boolean variables keyword only
-    "COM",  # standardise trailing comma conventions (source of black weirdness)
     "C4",  # iterable comprehension
     "EM",  # improves error readability
     "FA",  # modernise type annotations
@@ -26,7 +25,6 @@ select = [
     "G",  # set logging standards
     "T20",  # disallow print statements
     "PT",  # pytest style guidelines 
-    "Q",  # '->"
     "RET",  # improve return statement structuring
     "SIM",  # flake8 simplify, help address complexity 
     "TID",  # improve import structuring 
@@ -38,14 +36,15 @@ select = [
     "TRY",  # incentivse proper error handling
     "NPY",  # numpy modernisation rules
     "Q000",  # Bloody double quotes
+    "COM812", # Commas at end
 ]
+
 
 fixable = ["ALL"]
 
 ignore = [
     "ANN101",  # ignore need to type hint "self" in method calls
     "ANN102",  # ignore need to type hint "cls" in classmethod calls
-    "F401", #TEMPORARY! Cos qiskit
 ]
 
 [tool.ruff.pydocstyle]
@@ -53,3 +52,5 @@ convention="google"
 
 [tool.pyright]
 reportGeneralTypeIssues = false  # The h5.py stuff doesn't agree with PyLance
+
+

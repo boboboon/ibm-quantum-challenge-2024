@@ -45,6 +45,8 @@ fixable = ["ALL"]
 ignore = [
     "ANN101",  # ignore need to type hint "self" in method calls
     "ANN102",  # ignore need to type hint "cls" in classmethod calls
+    "F401", #TEMPORARY! Cos qiskit
+    "SIM112", # Im not the bad guy I promise
 ]
 
 [tool.ruff.pydocstyle]

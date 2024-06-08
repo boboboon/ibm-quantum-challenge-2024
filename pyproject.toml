@@ -37,6 +37,7 @@ select = [
     "NPY",  # numpy modernisation rules
     "Q000",  # Bloody double quotes
     "COM812", # Commas at end
+    "W293", # Fix White spaces
 ]
 
 
@@ -47,6 +48,7 @@ ignore = [
     "ANN102",  # ignore need to type hint "cls" in classmethod calls
     "F401", #TEMPORARY! Cos qiskit
     "SIM112", # Im not the bad guy I promise
+    "T201", # Their fault really
 ]
 
 [tool.ruff.pydocstyle]
